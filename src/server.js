@@ -30,7 +30,7 @@ app.get("/api/summary", async (req, res) => {
   }
 });
 
-app.get("/api/card.svg", async (req, res) => {
+async function handleCardRequest(req, res) {
   const username = (req.query.username || "").trim();
   if (!username) {
     return res.status(400).type("text/plain").send("username is required");
@@ -53,7 +53,10 @@ app.get("/api/card.svg", async (req, res) => {
       .type("text/plain")
       .send(error.message || "Failed to generate card");
   }
-});
+}
+
+app.get("/api/card", handleCardRequest);
+app.get("/api/card.svg", handleCardRequest);
 
 app.get("*", (_req, res) => {
   return res.sendFile(path.join(__dirname, "..", "public", "index.html"));

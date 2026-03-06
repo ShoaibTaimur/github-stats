@@ -53,7 +53,7 @@ function buildCardUrl(username) {
     params.set("title", title);
   }
 
-  return `${location.origin}/api/card.svg?${params.toString()}`;
+  return `${location.origin}/api/card?${params.toString()}`;
 }
 
 async function generate() {
