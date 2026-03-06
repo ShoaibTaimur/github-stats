@@ -128,7 +128,7 @@ function generateCardSvg(stats, options) {
   const langSvg = drawLanguageBars(topLanguages, languagesY, theme);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="860" height="${cardHeight}" viewBox="0 0 860 ${cardHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GitHub profile stats">
+<svg width="780" height="554" viewBox="0 0 860 ${cardHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GitHub profile stats">
   <rect width="860" height="${cardHeight}" rx="20" fill="${theme.card}" />
   <rect x="1" y="1" width="858" height="${cardHeight - 2}" rx="19" fill="none" stroke="${theme.border}" />
 

@@ -38,11 +38,11 @@ body {
 .page {
   position: relative;
   z-index: 1;
-  width: min(1200px, 94vw);
-  margin: 26px auto;
+  width: min(1120px, calc(100vw - 32px));
+  margin: 20px auto;
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 18px;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 16px;
 }
 
 .panel {
@@ -54,7 +54,7 @@ body {
 }
 
 .eyebrow {
-  margin: 0;
+  margin: 0 0 4px;
   color: var(--primary);
   font-weight: 700;
   font-size: 12px;
@@ -63,15 +63,31 @@ body {
 }
 
 h1 {
-  margin: 8px 0 10px;
-  font-size: 34px;
-  line-height: 1.08;
+  margin: 0 0 12px;
+  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+  line-height: 1.12;
   font-weight: 800;
+  position: relative;
+  display: inline-block;
+}
+
+h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 70%;
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  opacity: 0.35;
 }
 
 h2 {
-  margin: 14px 0 10px;
-  font-size: 21px;
+  margin: 16px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid rgba(76, 194, 255, 0.85);
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
   font-weight: 800;
 }
 
@@ -139,7 +155,7 @@ button.ghost {
 
 .checks {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -177,9 +193,14 @@ button.ghost {
 
 .result-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-head h2 {
+  margin: 0;
 }
 
 .meta {
@@ -194,13 +215,14 @@ button.ghost {
   background: #0c1426;
   border-radius: 12px;
   padding: 10px;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 #preview {
   display: block;
-  width: 100%;
-  min-width: 760px;
+  width: min(100%, 780px);
+  height: auto;
+  margin: 0 auto;
 }
 
 textarea {
@@ -224,19 +246,23 @@ textarea {
   .page {
     grid-template-columns: 1fr;
   }
-
-  #preview {
-    min-width: 700px;
-  }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 760px) {
+  .page {
+    width: min(1120px, calc(100vw - 20px));
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .lead {
+    font-size: 13px;
+  }
+
   .checks,
   .actions {
     grid-template-columns: 1fr;
-  }
-
-  #preview {
-    min-width: 620px;
   }
 }
