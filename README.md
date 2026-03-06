@@ -33,5 +33,5 @@ This project is now compatible with Vercel auto-detection and does not require `
 
 ## Notes
 
-- "Estimated Lines" is based on GitHub language byte data.
+- "Estimated Lines" is an approximation from public repository language + size metadata.
 - Contributions may show `--` when contribution data is not available.

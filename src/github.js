@@ -60,23 +60,18 @@ async function fetchRepos(username, token, maxRepos) {
   return repos;
 }
 
-async function fetchRepoLanguages(repos, token) {
+function estimateRepoLanguages(repos) {
   const totals = {};
 
-  // Keep requests stable to reduce chance of hitting rate limits quickly.
   for (const repo of repos) {
-    if (!repo.languages_url) {
+    const language = repo.language;
+    if (!language) {
       continue;
     }
 
-    try {
-      const map = await githubRequest(repo.languages_url, token);
-      for (const [language, bytes] of Object.entries(map)) {
-        totals[language] = (totals[language] || 0) + Number(bytes || 0);
-      }
-    } catch {
-      // Ignore per-repo language failures and continue.
-    }
+    // Repo size is in KB; convert to bytes as a rough language-weight signal.
+    const estimatedBytes = Math.max(1024, Number(repo.size || 0) * 1024);
+    totals[language] = (totals[language] || 0) + estimatedBytes;
   }
 
   return totals;
@@ -151,15 +146,16 @@ function sum(values) {
 }
 
 async function getProfileStats(username, { token, maxRepos }) {
+  const safeMaxRepos = Math.max(1, Math.min(30, Number(maxRepos || 30)));
   const user = await fetchUser(username, token);
-  const repos = await fetchRepos(username, token, maxRepos);
+  const repos = await fetchRepos(username, token, safeMaxRepos);
   const contributions = await fetchContributions(username, token);
 
   const stars = sum(repos.map((repo) => repo.stargazers_count));
   const forks = sum(repos.map((repo) => repo.forks_count));
   const openIssues = sum(repos.map((repo) => repo.open_issues_count));
 
-  const languageBytes = await fetchRepoLanguages(repos, token);
+  const languageBytes = estimateRepoLanguages(repos);
   const languageStats = computeLanguageStats(languageBytes);
 
   return {

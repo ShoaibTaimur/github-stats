@@ -5,13 +5,21 @@ const { generateCardSvg, parseCardOptions } = require("./card");
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const defaultMaxRepos = 60;
+const defaultMaxRepos = 30;
+
+function getQueryValue(req, key) {
+  const value = req?.query?.[key];
+  if (Array.isArray(value)) {
+    return String(value[0] || "");
+  }
+  return typeof value === "string" ? value : "";
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.get("/api/summary", async (req, res) => {
-  const username = (req.query.username || "").trim();
+  const username = getQueryValue(req, "username").trim();
   if (!username) {
     return res.status(400).json({ error: "username is required" });
   }
@@ -31,7 +39,7 @@ app.get("/api/summary", async (req, res) => {
 });
 
 async function handleCardRequest(req, res) {
-  const username = (req.query.username || "").trim();
+  const username = getQueryValue(req, "username").trim();
   if (!username) {
     return res.status(400).type("text/plain").send("username is required");
   }
