@@ -47,7 +47,8 @@ async function summaryHandler(req, res) {
 async function cardHandler(req, res) {
   const username = getQueryValue(req, "username").trim();
   if (!username) {
-    return res.status(400).type("text/plain").send("username is required");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    return res.status(400).send("username is required");
   }
 
   try {
@@ -64,11 +65,12 @@ async function cardHandler(req, res) {
       "Cache-Control",
       `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}, stale-while-revalidate=60`
     );
-    return res.status(200).type("image/svg+xml").send(svg);
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    return res.status(200).send(svg);
   } catch (error) {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     return res
       .status(Number(error.status || 500))
-      .type("text/plain")
       .send(error.message || "Failed to generate card");
   }
 }
