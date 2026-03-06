@@ -1,37 +1,54 @@
-﻿# GitHub Stats Create
+# GitHub Stats Create
 
-Create and customize a GitHub profile stats card, then copy the Markdown and paste it into your profile `README.md`.
+Dark-theme GitHub stats card generator for profile `README.md` embeds.
 
-## Create Your Card
+Users can create a custom card, copy Markdown, and paste it into their GitHub profile README. The card image is generated from live GitHub API data whenever the image URL is fetched.
 
-Use the live generator:
+## Features
 
-**https://stats.shoaaib.site**
+- Dark-first web UI for building cards
+- Custom title, theme, and visible metrics
+- Markdown + direct card URL copy buttons
+- Configurable cache interval per card (`cache_seconds`)
+- Works with Express locally and Vercel serverless routes
 
-Steps for users:
+## Local Setup
 
-1. Open the generator link.
-2. Enter your GitHub username.
-3. Choose theme and stats to show.
-4. Click `Generate Card`.
-5. Click `Copy Code`.
-6. Paste into your GitHub profile `README.md`.
+1. Install dependencies:
 
-## Example Output
-
-```md
-![yourname GitHub Stats](https://stats.shoaaib.site/api/card?username=yourname&theme=clean&show=repos,stars,forks,followers,following,lines)
+```bash
+npm install
 ```
 
-## Deploy on Vercel
+2. Create `.env` from `.env.example` and set values.
 
-1. Push this repo to GitHub.
-2. Import it into Vercel.
-3. Deploy directly.
+3. Run in dev mode:
 
-This project is now compatible with Vercel auto-detection and does not require `vercel.json`.
+```bash
+npm run dev
+```
+
+4. Open `http://localhost:3000`.
+
+## Environment Variables
+
+- `PORT` default: `3000`
+- `GITHUB_TOKEN` optional, recommended to avoid strict rate limits
+- `MAX_REPOS` default: `30` (range `1-100`)
+- `CARD_CACHE_SECONDS` default: `300` (range `60-3600`)
+
+## Embed Example
+
+```md
+![yourname GitHub Stats](https://your-domain.com/api/card?username=yourname&theme=dark&show=repos,stars,forks,followers,following,lines&cache_seconds=300)
+```
 
 ## Notes
 
-- "Estimated Lines" is an approximation from public repository language + size metadata.
-- Contributions may show `--` when contribution data is not available.
+- "Estimated Lines" is an approximation based on repository size metadata.
+- Contributions require `GITHUB_TOKEN`; otherwise the field may show `--`.
+- Refresh cadence depends on your `cache_seconds` and downstream caching behavior.
+
+## Deploy
+
+Deploy to Vercel by importing this repo. The project works with Vercel auto-detection and does not require `vercel.json`.

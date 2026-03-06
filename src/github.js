@@ -146,7 +146,7 @@ function sum(values) {
 }
 
 async function getProfileStats(username, { token, maxRepos }) {
-  const safeMaxRepos = Math.max(1, Math.min(30, Number(maxRepos || 30)));
+  const safeMaxRepos = Math.max(1, Math.min(100, Number(maxRepos || 30)));
   const user = await fetchUser(username, token);
   const repos = await fetchRepos(username, token, safeMaxRepos);
   const contributions = await fetchContributions(username, token);

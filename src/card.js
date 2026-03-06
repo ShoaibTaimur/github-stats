@@ -10,21 +10,22 @@ const DEFAULT_METRICS = [
 ];
 
 function parseCardOptions(query) {
-  const theme = typeof query.theme === "string" ? query.theme : "clean";
+  const theme = typeof query.theme === "string" ? query.theme : "dark";
 
-  const show =
+  const showValues =
     typeof query.show === "string" && query.show.trim().length
       ? query.show
           .split(",")
           .map((item) => item.trim().toLowerCase())
           .filter(Boolean)
       : DEFAULT_METRICS;
+  const show = [...new Set(showValues)];
 
   const title = typeof query.title === "string" ? query.title.trim() : "";
 
   return {
     theme,
-    show,
+    show: show.length ? show : DEFAULT_METRICS,
     title
   };
 }

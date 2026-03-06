@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,45 +6,77 @@
     <title>GitHub Stats Card Generator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="bg-glow" aria-hidden="true"></div>
     <main class="page">
-      <section class="box controls">
-        <h1>GitHub Card Generator</h1>
-        <p>1) Type username 2) Pick options 3) Copy markdown to your profile README.</p>
+      <section class="panel controls">
+        <p class="eyebrow">GitHub README Widget</p>
+        <h1>Build a Live Stats Card</h1>
+        <p class="lead">
+          Generate your card URL, copy the Markdown snippet, and paste it in your
+          profile <code>README.md</code>.
+        </p>
 
         <label for="username">GitHub Username</label>
-        <input id="username" placeholder="octocat" />
+        <input id="username" placeholder="octocat" autocomplete="off" />
 
-        <label for="theme">Theme</label>
+        <label for="theme">Card Theme</label>
         <select id="theme">
-          <option value="clean">Clean</option>
-          <option value="dark">Dark</option>
+          <option value="dark" selected>Dark</option>
           <option value="ocean">Ocean</option>
+          <option value="clean">Clean</option>
           <option value="warm">Warm</option>
         </select>
 
         <label for="title">Card Title (optional)</label>
-        <input id="title" placeholder="My GitHub Profile" />
+        <input id="title" placeholder="My GitHub Activity" autocomplete="off" />
 
-        <label>What to Show</label>
+        <label for="refresh">Refresh Interval</label>
+        <select id="refresh">
+          <option value="300" selected>5 minutes</option>
+          <option value="600">10 minutes</option>
+          <option value="900">15 minutes</option>
+          <option value="1800">30 minutes</option>
+        </select>
+
+        <label>Metrics</label>
         <div class="checks" id="metrics"></div>
 
-        <button id="generate">Generate Card</button>
+        <button id="generate" type="button">Generate Card</button>
         <div id="status" class="status">Ready.</div>
       </section>
 
-      <section class="box result">
-        <h2>Preview</h2>
+      <section class="panel result">
+        <div class="result-head">
+          <h2>Preview</h2>
+          <p id="meta" class="meta">No profile loaded.</p>
+        </div>
+
         <div class="preview-wrap">
           <img id="preview" alt="Card preview" />
         </div>
 
-        <h2>README Code</h2>
-        <textarea id="markdown" rows="3" readonly></textarea>
-        <button id="copy">Copy Code</button>
+        <h2>Markdown</h2>
+        <textarea id="markdown" rows="4" readonly></textarea>
+
+        <h2>Card URL</h2>
+        <textarea id="cardUrl" rows="3" readonly></textarea>
+
+        <div class="actions">
+          <button id="copy" type="button">Copy Markdown</button>
+          <button id="copyUrl" type="button" class="ghost">Copy URL</button>
+        </div>
+
+        <p class="footnote">
+          This embed stays up to date because GitHub loads the image URL from your
+          deployed API. The cache interval controls freshness.
+        </p>
       </section>
     </main>
 

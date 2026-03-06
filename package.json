@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/github.js && node --check src/card.js && node --check src/themes.js && node --check public/app.js"
+    "check": "node --check src/server.js && node --check src/config.js && node --check src/handlers.js && node --check src/github.js && node --check src/card.js && node --check src/themes.js && node --check api/summary.js && node --check api/card.js && node --check public/app.js"
   },
   "engines": {
     "node": ">=18"
