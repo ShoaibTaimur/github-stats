@@ -19,6 +19,37 @@ The card image is served from your API endpoint, so it stays up to date as GitHu
   - Express server (`src/server.js`) for local/dev usage
   - Vercel serverless handlers (`api/card.js`, `api/summary.js`) for deployment
 
+## Card Features (Complete)
+
+- Dynamic SVG card generated from live GitHub data
+- Core stats tiles:
+  - Repositories
+  - Stars
+  - Followers
+  - Following
+- Language insights:
+  - Donut chart showing full language distribution
+  - Language percentage bars
+  - Uses per-repo GitHub `/languages` byte data for better accuracy
+  - Includes secondary languages (for example PowerShell inside non-PowerShell repos)
+  - Automatic fallback to repo primary-language estimation if language API calls fail
+- Profile header:
+  - GitHub username
+  - Display name
+  - Member since year
+- Auto-resizing layout:
+  - Card height grows when more language rows are present
+  - Sections are isolated to prevent text overlap
+- Theme system:
+  - `dark`, `ocean`, `forest`, `graphite`, `clean`, `warm`
+  - Theme changes the full card vibe (background, panels, accents, charts, borders)
+- Caching control:
+  - `cache_seconds` query support (`60-3600`)
+  - Cache headers set for CDN/browser behavior
+- Embed-ready output:
+  - Direct Markdown snippet generation
+  - Stable card URL for GitHub profile README usage
+
 ## Website Tour (End-to-End)
 
 1. Open the site.
