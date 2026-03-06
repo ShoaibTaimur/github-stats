@@ -34,6 +34,11 @@ const GITHUB_REQUEST_TIMEOUT_MS = clamp(
   2000,
   20000
 );
+const LANGUAGE_FETCH_CONCURRENCY = clamp(
+  toNumber(process.env.LANGUAGE_FETCH_CONCURRENCY, 6),
+  1,
+  20
+);
 const CARD_CACHE_SECONDS = clamp(
   toNumber(process.env.CARD_CACHE_SECONDS, 300),
   60,
@@ -47,6 +52,7 @@ module.exports = {
   ALL_REPOS_MODE,
   ALL_REPOS_HARD_LIMIT,
   GITHUB_REQUEST_TIMEOUT_MS,
+  LANGUAGE_FETCH_CONCURRENCY,
   CARD_CACHE_SECONDS,
   GITHUB_TOKEN
 };

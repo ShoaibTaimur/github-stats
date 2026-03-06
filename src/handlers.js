@@ -6,6 +6,7 @@ const {
   ALL_REPOS_MODE,
   ALL_REPOS_HARD_LIMIT,
   GITHUB_REQUEST_TIMEOUT_MS,
+  LANGUAGE_FETCH_CONCURRENCY,
   CARD_CACHE_SECONDS
 } = require("./config");
 
@@ -43,7 +44,8 @@ async function summaryHandler(req, res) {
       maxRepos: MAX_REPOS,
       allReposMode: ALL_REPOS_MODE,
       allReposHardLimit: ALL_REPOS_HARD_LIMIT,
-      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS
+      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS,
+      languageFetchConcurrency: LANGUAGE_FETCH_CONCURRENCY
     });
 
     return res.status(200).json(stats);
@@ -67,7 +69,8 @@ async function cardHandler(req, res) {
       maxRepos: MAX_REPOS,
       allReposMode: ALL_REPOS_MODE,
       allReposHardLimit: ALL_REPOS_HARD_LIMIT,
-      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS
+      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS,
+      languageFetchConcurrency: LANGUAGE_FETCH_CONCURRENCY
     });
 
     const options = parseCardOptions(req.query);

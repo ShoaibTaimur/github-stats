@@ -66,6 +66,7 @@ Example:
 - `ALL_REPOS_MODE` default: `true` (when `true`, ignores `MAX_REPOS` and scans until hard limit)
 - `ALL_REPOS_HARD_LIMIT` default: `300` (range `50-2000`, safety cap for all-repos mode)
 - `GITHUB_REQUEST_TIMEOUT_MS` default: `8000` (range `2000-20000`)
+- `LANGUAGE_FETCH_CONCURRENCY` default: `6` (range `1-20`, controls parallel `/languages` requests)
 - `CARD_CACHE_SECONDS` default: `300` (range `60-3600`)
 
 ### All Repos Mode (With Safeguards)
@@ -78,7 +79,14 @@ To scan more than a fixed repo count, enable:
 Safeguards included:
 - hard repo cap (`ALL_REPOS_HARD_LIMIT`)
 - request timeout (`GITHUB_REQUEST_TIMEOUT_MS`)
+- controlled parallelism for language API calls (`LANGUAGE_FETCH_CONCURRENCY`)
 - normal GitHub rate limiting still applies
+
+### Language Accuracy
+
+Language totals now come from each repository's GitHub `/languages` endpoint (byte-level aggregation), so secondary languages like PowerShell are included.
+
+If those calls fail (for example due to rate limits), the system automatically falls back to repo primary-language estimation.
 
 ## Do You Need `.env` and `.env.example`?
 

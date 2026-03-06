@@ -99,6 +99,76 @@ function estimateRepoLanguages(repos) {
   return totals;
 }
 
+async function mapWithConcurrency(items, concurrency, worker) {
+  const safeConcurrency = Math.max(1, Math.min(20, Number(concurrency || 1)));
+  const results = new Array(items.length);
+  let index = 0;
+
+  async function runWorker() {
+    while (index < items.length) {
+      const currentIndex = index;
+      index += 1;
+
+      try {
+        results[currentIndex] = await worker(items[currentIndex], currentIndex);
+      } catch {
+        results[currentIndex] = null;
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(safeConcurrency, items.length) }, () =>
+      runWorker()
+    )
+  );
+
+  return results;
+}
+
+async function fetchRepoLanguageTotals(
+  repos,
+  token,
+  timeoutMs,
+  languageFetchConcurrency
+) {
+  if (!repos.length) {
+    return { totals: {}, failedRepos: 0 };
+  }
+
+  const responses = await mapWithConcurrency(
+    repos,
+    languageFetchConcurrency,
+    async (repo) => {
+      if (!repo?.languages_url) {
+        return null;
+      }
+
+      return githubRequest(repo.languages_url, token, timeoutMs);
+    }
+  );
+
+  const totals = {};
+  let failedRepos = 0;
+
+  for (const item of responses) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      failedRepos += 1;
+      continue;
+    }
+
+    for (const [language, bytes] of Object.entries(item)) {
+      const safeBytes = Number(bytes || 0);
+      if (safeBytes <= 0) {
+        continue;
+      }
+      totals[language] = (totals[language] || 0) + safeBytes;
+    }
+  }
+
+  return { totals, failedRepos };
+}
+
 async function fetchContributions(username, token, timeoutMs = DEFAULT_TIMEOUT_MS) {
   if (!token) {
     return null;
@@ -180,7 +250,14 @@ function sum(values) {
 
 async function getProfileStats(
   username,
-  { token, maxRepos, allReposMode, allReposHardLimit, requestTimeoutMs }
+  {
+    token,
+    maxRepos,
+    allReposMode,
+    allReposHardLimit,
+    requestTimeoutMs,
+    languageFetchConcurrency
+  }
 ) {
   const timeoutMs = Math.max(
     2000,
@@ -201,7 +278,18 @@ async function getProfileStats(
   const forks = sum(repos.map((repo) => repo.forks_count));
   const openIssues = sum(repos.map((repo) => repo.open_issues_count));
 
-  const languageBytes = estimateRepoLanguages(repos);
+  const {
+    totals: preciseLanguageBytes,
+    failedRepos: failedLanguageRepos
+  } = await fetchRepoLanguageTotals(
+    repos,
+    token,
+    timeoutMs,
+    languageFetchConcurrency
+  );
+  const preciseLanguageCount = Object.keys(preciseLanguageBytes).length;
+  const languageBytes =
+    preciseLanguageCount > 0 ? preciseLanguageBytes : estimateRepoLanguages(repos);
   const languageStats = computeLanguageStats(languageBytes);
 
   return {
@@ -232,7 +320,16 @@ async function getProfileStats(
     scanConfig: {
       allReposMode: Boolean(allReposMode),
       targetRepos: repoTarget,
-      hardLimit: safeAllReposHardLimit
+      hardLimit: safeAllReposHardLimit,
+      languageFetchConcurrency: Math.max(
+        1,
+        Math.min(20, Number(languageFetchConcurrency || 1))
+      )
+    },
+    languageScan: {
+      source: preciseLanguageCount > 0 ? "repo_languages_api" : "repo_primary_language_fallback",
+      repositoriesAttempted: repos.length,
+      repositoriesFailed: failedLanguageRepos
     }
   };
 }
