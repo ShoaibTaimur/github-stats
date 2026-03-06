@@ -1,0 +1,53 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Stats Card Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="box controls">
+        <h1>GitHub Card Generator</h1>
+        <p>1) Type username 2) Pick options 3) Copy markdown to your profile README.</p>
+
+        <label for="username">GitHub Username</label>
+        <input id="username" placeholder="octocat" />
+
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="clean">Clean</option>
+          <option value="dark">Dark</option>
+          <option value="ocean">Ocean</option>
+          <option value="warm">Warm</option>
+        </select>
+
+        <label for="title">Card Title (optional)</label>
+        <input id="title" placeholder="My GitHub Profile" />
+
+        <label>What to Show</label>
+        <div class="checks" id="metrics"></div>
+
+        <button id="generate">Generate Card</button>
+        <div id="status" class="status">Ready.</div>
+      </section>
+
+      <section class="box result">
+        <h2>Preview</h2>
+        <div class="preview-wrap">
+          <img id="preview" alt="Card preview" />
+        </div>
+
+        <h2>README Code</h2>
+        <textarea id="markdown" rows="3" readonly></textarea>
+        <button id="copy">Copy Code</button>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

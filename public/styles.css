@@ -1,0 +1,155 @@
+﻿:root {
+  --bg: #f2f6ff;
+  --text: #0f172a;
+  --muted: #475569;
+  --border: #dbe4f3;
+  --panel: #ffffff;
+  --button: #2563eb;
+  --button-hover: #1e4fc9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  color: var(--text);
+  background: linear-gradient(135deg, #eef3ff, #f8fbff);
+}
+
+.page {
+  width: min(1100px, 94vw);
+  margin: 26px auto;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+}
+
+.box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+label {
+  display: block;
+  margin: 11px 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  font-family: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 11px 12px;
+  font-size: 15px;
+}
+
+input,
+select,
+textarea {
+  background: #fff;
+  color: var(--text);
+}
+
+button {
+  border: 0;
+  background: var(--button);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:hover {
+  background: var(--button-hover);
+}
+
+.checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+}
+
+.checks label {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checks input {
+  width: auto;
+}
+
+.status {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.preview-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafcff;
+  padding: 8px;
+  overflow-x: auto;
+}
+
+#preview {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+@media (max-width: 980px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  #preview {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 620px) {
+  .checks {
+    grid-template-columns: 1fr;
+  }
+
+  #preview {
+    min-width: 620px;
+  }
+}
