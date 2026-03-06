@@ -7,8 +7,13 @@ const {
   ALL_REPOS_HARD_LIMIT,
   GITHUB_REQUEST_TIMEOUT_MS,
   LANGUAGE_FETCH_CONCURRENCY,
+  STATS_CACHE_SECONDS,
+  UNAUTH_MAX_REPOS,
+  UNAUTH_LANGUAGE_FETCH_CONCURRENCY,
   CARD_CACHE_SECONDS
 } = require("./config");
+
+const statsCache = new Map();
 
 function getQueryValue(req, key) {
   const value = req?.query?.[key];
@@ -32,6 +37,72 @@ function getCacheSeconds(req) {
   return Math.min(3600, Math.max(60, Math.round(value)));
 }
 
+function buildStatsOptions() {
+  const hasToken = Boolean(GITHUB_TOKEN);
+  const effectiveAllReposMode = hasToken ? ALL_REPOS_MODE : false;
+  const effectiveMaxRepos = hasToken
+    ? MAX_REPOS
+    : Math.min(MAX_REPOS, UNAUTH_MAX_REPOS);
+  const effectiveAllReposHardLimit = hasToken
+    ? ALL_REPOS_HARD_LIMIT
+    : Math.min(ALL_REPOS_HARD_LIMIT, UNAUTH_MAX_REPOS);
+  const effectiveLanguageFetchConcurrency = hasToken
+    ? LANGUAGE_FETCH_CONCURRENCY
+    : Math.min(LANGUAGE_FETCH_CONCURRENCY, UNAUTH_LANGUAGE_FETCH_CONCURRENCY);
+
+  return {
+    token: GITHUB_TOKEN,
+    maxRepos: effectiveMaxRepos,
+    allReposMode: effectiveAllReposMode,
+    allReposHardLimit: effectiveAllReposHardLimit,
+    requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS,
+    languageFetchConcurrency: effectiveLanguageFetchConcurrency,
+    requestContext: {
+      hasToken
+    }
+  };
+}
+
+function buildStatsCacheKey(username, statsOptions) {
+  return JSON.stringify({
+    username: username.toLowerCase(),
+    hasToken: Boolean(statsOptions.token),
+    allReposMode: Boolean(statsOptions.allReposMode),
+    maxRepos: statsOptions.maxRepos,
+    hardLimit: statsOptions.allReposHardLimit,
+    timeoutMs: statsOptions.requestTimeoutMs,
+    concurrency: statsOptions.languageFetchConcurrency
+  });
+}
+
+async function getStatsCached(username) {
+  const statsOptions = buildStatsOptions();
+  const key = buildStatsCacheKey(username, statsOptions);
+  const now = Date.now();
+  const ttlMs = STATS_CACHE_SECONDS * 1000;
+  const cached = statsCache.get(key);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  const value = await getProfileStats(username, statsOptions);
+  statsCache.set(key, {
+    value,
+    expiresAt: now + ttlMs
+  });
+
+  // Keep cache bounded.
+  if (statsCache.size > 300) {
+    const firstKey = statsCache.keys().next().value;
+    if (firstKey) {
+      statsCache.delete(firstKey);
+    }
+  }
+
+  return value;
+}
+
 async function summaryHandler(req, res) {
   const username = getQueryValue(req, "username").trim();
   if (!username) {
@@ -39,14 +110,7 @@ async function summaryHandler(req, res) {
   }
 
   try {
-    const stats = await getProfileStats(username, {
-      token: GITHUB_TOKEN,
-      maxRepos: MAX_REPOS,
-      allReposMode: ALL_REPOS_MODE,
-      allReposHardLimit: ALL_REPOS_HARD_LIMIT,
-      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS,
-      languageFetchConcurrency: LANGUAGE_FETCH_CONCURRENCY
-    });
+    const stats = await getStatsCached(username);
 
     return res.status(200).json(stats);
   } catch (error) {
@@ -64,14 +128,7 @@ async function cardHandler(req, res) {
   }
 
   try {
-    const stats = await getProfileStats(username, {
-      token: GITHUB_TOKEN,
-      maxRepos: MAX_REPOS,
-      allReposMode: ALL_REPOS_MODE,
-      allReposHardLimit: ALL_REPOS_HARD_LIMIT,
-      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS,
-      languageFetchConcurrency: LANGUAGE_FETCH_CONCURRENCY
-    });
+    const stats = await getStatsCached(username);
 
     const options = parseCardOptions(req.query);
     const svg = generateCardSvg(stats, options);

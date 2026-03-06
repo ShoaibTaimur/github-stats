@@ -28,11 +28,16 @@ async function githubRequest(url, token, timeoutMs = DEFAULT_TIMEOUT_MS) {
 
   if (!response.ok) {
     const details = await safeJson(response);
-    const message =
-      details?.message || `GitHub API request failed (${response.status})`;
+    const isRateLimited =
+      response.status === 403 &&
+      typeof details?.message === "string" &&
+      details.message.toLowerCase().includes("rate limit");
+    const message = isRateLimited
+      ? "GitHub API rate limit exceeded. Configure GITHUB_TOKEN to increase limits."
+      : details?.message || `GitHub API request failed (${response.status})`;
 
     const error = new Error(message);
-    error.status = response.status;
+    error.status = isRateLimited ? 429 : response.status;
     throw error;
   }
 

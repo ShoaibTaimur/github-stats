@@ -95,9 +95,12 @@ Example:
 - `GITHUB_TOKEN` optional but recommended (higher GitHub API rate limits, better reliability)
 - `MAX_REPOS` default: `30` (range `1-100`)
 - `ALL_REPOS_MODE` default: `true` (when `true`, ignores `MAX_REPOS` and scans until hard limit)
-- `ALL_REPOS_HARD_LIMIT` default: `300` (range `50-2000`, safety cap for all-repos mode)
+- `ALL_REPOS_HARD_LIMIT` default: `80` (range `50-2000`, safety cap for all-repos mode)
 - `GITHUB_REQUEST_TIMEOUT_MS` default: `8000` (range `2000-20000`)
 - `LANGUAGE_FETCH_CONCURRENCY` default: `6` (range `1-20`, controls parallel `/languages` requests)
+- `STATS_CACHE_SECONDS` default: `180` (range `30-900`, in-memory API result cache)
+- `UNAUTH_MAX_REPOS` default: `80` (range `20-200`, safety cap when `GITHUB_TOKEN` is missing)
+- `UNAUTH_LANGUAGE_FETCH_CONCURRENCY` default: `2` (range `1-6`, safer concurrency without token)
 - `CARD_CACHE_SECONDS` default: `300` (range `60-3600`)
 
 ### All Repos Mode (With Safeguards)
@@ -111,6 +114,8 @@ Safeguards included:
 - hard repo cap (`ALL_REPOS_HARD_LIMIT`)
 - request timeout (`GITHUB_REQUEST_TIMEOUT_MS`)
 - controlled parallelism for language API calls (`LANGUAGE_FETCH_CONCURRENCY`)
+- in-memory stats cache (`STATS_CACHE_SECONDS`) to avoid repeated API hits
+- automatic downscaling when no token is configured (`UNAUTH_MAX_REPOS`, `UNAUTH_LANGUAGE_FETCH_CONCURRENCY`)
 - normal GitHub rate limiting still applies
 
 ### Language Accuracy
