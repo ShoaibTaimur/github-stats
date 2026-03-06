@@ -1,4 +1,4 @@
-﻿const { getTheme } = require("./themes");
+const { getTheme } = require("./themes");
 
 const DEFAULT_METRICS = [
   "repos",
@@ -69,119 +69,138 @@ function metricRows(stats, show) {
   }));
 }
 
-function valueFontSize(value) {
-  const length = String(value).length;
-  if (length > 10) {
-    return 32;
-  }
-  if (length > 7) {
-    return 35;
-  }
-  return 38;
+function polarToCartesian(cx, cy, radius, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(rad),
+    y: cy + radius * Math.sin(rad)
+  };
 }
 
-function drawLanguageBars(topLanguages, y, theme) {
-  const languageLabelX = 438;
-  const languagePercentX = 812;
-  const languageBarX = 438;
-  const languageBarWidth = 374;
+function arcPath(cx, cy, radius, startDeg, endDeg) {
+  const start = polarToCartesian(cx, cy, radius, endDeg);
+  const end = polarToCartesian(cx, cy, radius, startDeg);
+  const largeArcFlag = endDeg - startDeg <= 180 ? "0" : "1";
 
-  if (!topLanguages.length) {
-    return `<text x="${languageLabelX}" y="${y}" fill="${theme.muted}" font-size="16">No language data available.</text>`;
-  }
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
 
-  return topLanguages
-    .map((item, i) => {
-      const rowY = y + i * 48;
-      const barWidth = Math.max(
-        8,
-        Math.round((item.percent / 100) * languageBarWidth)
-      );
-      return `
-        <text x="${languageLabelX}" y="${rowY}" fill="${theme.muted}" font-size="15">${xmlEscape(item.language)}</text>
-        <text x="${languagePercentX}" y="${rowY}" text-anchor="end" fill="${theme.text}" font-size="15" font-weight="700">${item.percent.toFixed(1)}%</text>
-        <rect x="${languageBarX}" y="${rowY + 10}" width="${languageBarWidth}" height="14" rx="7" fill="${theme.track}" />
-        <rect x="${languageBarX}" y="${rowY + 10}" width="${barWidth}" height="14" rx="7" fill="url(#accentFill)" />
-      `;
-    })
-    .join("\n");
+function buildLanguageSegments(topLanguages) {
+  const palette = ["#33a7ff", "#ff4fa3", "#8bc34a", "#ffd54f", "#7e8dff"];
+
+  const source = topLanguages.length
+    ? topLanguages.slice(0, 5)
+    : [{ language: "No data", percent: 100 }];
+
+  return source.map((item, index) => ({
+    language: item.language,
+    percent: Number(item.percent || 0),
+    color: palette[index % palette.length]
+  }));
 }
 
 function generateCardSvg(stats, options) {
   const theme = getTheme(options.theme);
   const rows = metricRows(stats, options.show);
-  const topLanguages = stats.languages.topLanguages.slice(0, 5);
+  const tiles = rows.slice(0, 4);
+  const segments = buildLanguageSegments(stats.languages.topLanguages);
 
-  const featured = rows.slice(0, 4);
-  const extra = rows.slice(4, 10);
+  const width = 900;
+  const height = 520;
 
-  const cardHeight = 660;
-  const title = options.title || `${stats.profile.username} GitHub Stats`;
+  const donutCenterX = 180;
+  const donutCenterY = 190;
+  const donutRadius = 103;
+  const donutStroke = 34;
 
-  const featuredSvg = featured
+  let currentAngle = 0;
+  const donutArcs = segments
+    .filter((item) => item.percent > 0)
+    .map((item) => {
+      const sweep = (item.percent / 100) * 360;
+      const start = currentAngle;
+      const end = currentAngle + Math.max(2, sweep);
+      currentAngle = end;
+
+      return `<path d="${arcPath(
+        donutCenterX,
+        donutCenterY,
+        donutRadius,
+        start,
+        end
+      )}" stroke="${item.color}" stroke-width="${donutStroke}" fill="none" stroke-linecap="round"/>`;
+    })
+    .join("\n");
+
+  const legend = segments
+    .slice(0, 4)
+    .map((item, index) => {
+      const y = 332 + index * 28;
+      return `
+        <circle cx="82" cy="${y - 5}" r="6" fill="${item.color}" />
+        <text x="98" y="${y}" fill="${theme.text}" font-size="27" font-weight="700">${xmlEscape(item.language)}: ${item.percent.toFixed(1)}%</text>
+      `;
+    })
+    .join("\n");
+
+  const tileSvg = tiles
     .map((item, index) => {
       const col = index % 2;
       const row = Math.floor(index / 2);
-      const x = 32 + col * 420;
-      const y = 100 + row * 126;
+      const x = 342 + col * 274;
+      const y = 238 + row * 105;
 
       return `
-        <rect x="${x}" y="${y}" width="390" height="104" rx="16" fill="${theme.tile}" stroke="${theme.border}" />
-        <text x="${x + 20}" y="${y + 36}" fill="${theme.muted}" font-size="16">${xmlEscape(item.label)}</text>
-        <text x="${x + 20}" y="${y + 80}" fill="${theme.text}" font-size="${valueFontSize(item.value)}" font-weight="800">${xmlEscape(item.value)}</text>
+        <rect x="${x}" y="${y}" width="258" height="86" rx="14" fill="${theme.tile}" stroke="${theme.border}" />
+        <text x="${x + 16}" y="${y + 32}" fill="${theme.muted}" font-size="24" font-weight="700">${xmlEscape(item.label)}</text>
+        <text x="${x + 16}" y="${y + 67}" fill="${theme.text}" font-size="39" font-weight="800">${xmlEscape(item.value)}</text>
       `;
     })
     .join("\n");
 
-  const extraSvg = extra
-    .map((item, index) => {
-      const y = 408 + index * 34;
-      return `
-        <text x="32" y="${y}" fill="${theme.muted}" font-size="16">${xmlEscape(item.label)}</text>
-        <text x="392" y="${y}" text-anchor="end" fill="${theme.text}" font-size="18" font-weight="700">${xmlEscape(item.value)}</text>
-      `;
-    })
-    .join("\n");
+  const memberSinceYear = stats.profile.createdAt
+    ? new Date(stats.profile.createdAt).getUTCFullYear()
+    : "--";
 
-  const languagesY = 408;
-  const langSvg = drawLanguageBars(topLanguages, languagesY, theme);
+  const heading = options.title || `${stats.profile.username} GitHub Stats`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="780" height="600" viewBox="0 0 860 ${cardHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GitHub profile stats">
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GitHub profile stats">
   <defs>
-    <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bgFill" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="${theme.card}" />
-      <stop offset="100%" stop-color="${theme.tile}" />
+      <stop offset="100%" stop-color="#032f3e" />
     </linearGradient>
-    <linearGradient id="accentFill" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="${theme.accent}" />
-      <stop offset="100%" stop-color="#53d0ff" />
-    </linearGradient>
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-opacity="0.18" />
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-opacity="0.22" />
     </filter>
   </defs>
 
-  <rect width="860" height="${cardHeight}" rx="20" fill="${theme.card}" />
-  <rect width="860" height="${cardHeight}" rx="20" fill="url(#cardBg)" opacity="0.24" />
-  <rect x="1" y="1" width="858" height="${cardHeight - 2}" rx="19" fill="none" stroke="${theme.border}" />
-  <circle cx="748" cy="-30" r="170" fill="${theme.accent}" opacity="0.07" />
-  <circle cx="100" cy="700" r="220" fill="${theme.accent}" opacity="0.04" />
+  <rect width="${width}" height="${height}" rx="20" fill="url(#bgFill)"/>
+  <rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="19" fill="none" stroke="${theme.border}" />
 
-  <text x="32" y="50" fill="${theme.text}" font-size="42" font-weight="800">${xmlEscape(title)}</text>
-  <text x="32" y="80" fill="${theme.muted}" font-size="22">@${xmlEscape(stats.profile.username)} | ${xmlEscape(stats.profile.name || "GitHub user")}</text>
+  <rect x="24" y="24" width="284" height="472" rx="18" fill="#002f3a" opacity="0.54"/>
 
-  <g filter="url(#softShadow)">
-    ${featuredSvg}
+  <circle cx="${donutCenterX}" cy="${donutCenterY}" r="${donutRadius}" fill="none" stroke="${theme.track}" stroke-width="${donutStroke}" opacity="0.42"/>
+  <g filter="url(#softGlow)">
+    ${donutArcs}
   </g>
 
-  <text x="32" y="376" fill="${theme.text}" font-size="38" font-weight="800">More Stats</text>
-  ${extraSvg}
+  <text x="${donutCenterX}" y="186" text-anchor="middle" fill="${theme.text}" font-size="56" font-weight="800">${xmlEscape(formatNumber(stats.profile.publicRepos))}</text>
+  <text x="${donutCenterX}" y="220" text-anchor="middle" fill="${theme.muted}" font-size="26" font-weight="700">REPOS</text>
 
-  <text x="438" y="376" fill="${theme.text}" font-size="38" font-weight="800">Top Languages</text>
-  ${langSvg}
+  ${legend}
 
-  <text x="32" y="626" fill="${theme.muted}" font-size="17">Generated from public GitHub data</text>
+  <text x="342" y="68" fill="#1cff49" font-size="48" font-weight="900">${xmlEscape(stats.profile.username)}</text>
+  <text x="342" y="103" fill="${theme.text}" font-size="36" font-weight="700">${xmlEscape(stats.profile.name || "GitHub User")}</text>
+  <text x="342" y="132" fill="${theme.muted}" font-size="31">Member since ${memberSinceYear}</text>
+
+  <rect x="342" y="150" width="532" height="70" rx="14" fill="${theme.tile}" stroke="${theme.border}" />
+  <text x="608" y="193" text-anchor="middle" fill="${theme.text}" font-size="36" font-weight="800">${xmlEscape(heading)}</text>
+
+  ${tileSvg}
+
+  <text x="32" y="492" fill="${theme.muted}" font-size="17">Generated from public GitHub data</text>
 </svg>`;
 }
 
