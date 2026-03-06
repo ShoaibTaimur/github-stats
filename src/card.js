@@ -26,6 +26,14 @@ function formatNumber(value) {
   return Intl.NumberFormat("en-US").format(value);
 }
 
+function clampText(value, maxLength) {
+  const text = String(value || "");
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
 function metricRows(stats) {
   const counters = stats.counters;
   const profile = stats.profile;
@@ -88,12 +96,33 @@ function generateCardSvg(stats, options) {
   const tiles = metricRows(stats);
   const segments = buildLanguageSegments(stats, theme);
 
-  const width = 780;
-  const height = 450;
+  const width = 820;
+  const padding = 20;
+  const headerHeight = 86;
+  const gap = 14;
 
-  const donutCenterX = 146;
-  const donutCenterY = 214;
-  const donutRadius = 74;
+  const leftPanelX = padding;
+  const leftPanelY = padding + headerHeight + gap;
+  const leftPanelWidth = 258;
+
+  const rightPanelX = leftPanelX + leftPanelWidth + gap;
+  const rightPanelWidth = width - padding - rightPanelX;
+  const statsPanelY = leftPanelY;
+  const statsPanelHeight = 190;
+
+  const languageRowHeight = 26;
+  const languageRows = Math.max(1, segments.length);
+  const languagePanelY = statsPanelY + statsPanelHeight + gap;
+  const languagePanelHeight = 22 + 18 + languageRows * languageRowHeight + 12;
+
+  const footerY = languagePanelY + languagePanelHeight + 18;
+  const contentBottom = footerY + 6;
+  const leftPanelHeight = contentBottom - leftPanelY;
+  const height = Math.max(contentBottom + padding, 500);
+
+  const donutCenterX = leftPanelX + Math.round(leftPanelWidth / 2);
+  const donutCenterY = leftPanelY + 98;
+  const donutRadius = 76;
   const donutStroke = 20;
 
   let currentAngle = 0;
@@ -114,15 +143,16 @@ function generateCardSvg(stats, options) {
     })
     .join("\n");
 
-  const bars = segments.slice(0, 4)
+  const bars = segments
     .map((item, index) => {
-      const y = 336 + index * 26;
-      const barWidth = Math.max(8, Math.round((item.percent / 100) * 214));
+      const y = languagePanelY + 42 + index * languageRowHeight;
+      const label = clampText(item.language, 20);
+      const barWidth = Math.max(8, Math.round((item.percent / 100) * 210));
       return `
-        <text x="290" y="${y}" fill="${theme.muted}" font-size="12" font-weight="600">${xmlEscape(item.language)}</text>
-        <text x="726" y="${y}" text-anchor="end" fill="${theme.text}" font-size="12" font-weight="700">${item.percent.toFixed(1)}%</text>
-        <rect x="380" y="${y - 9}" width="214" height="10" rx="5" fill="${theme.track}" opacity="0.85" />
-        <rect x="380" y="${y - 9}" width="${barWidth}" height="10" rx="5" fill="${item.color}" />
+        <text x="${rightPanelX + 18}" y="${y}" fill="${theme.muted}" font-size="12" font-weight="600">${xmlEscape(label)}</text>
+        <text x="${rightPanelX + rightPanelWidth - 18}" y="${y}" text-anchor="end" fill="${theme.text}" font-size="12" font-weight="700">${item.percent.toFixed(1)}%</text>
+        <rect x="${rightPanelX + 180}" y="${y - 9}" width="210" height="10" rx="5" fill="${theme.track}" opacity="0.85" />
+        <rect x="${rightPanelX + 180}" y="${y - 9}" width="${barWidth}" height="10" rx="5" fill="${item.color}" />
       `;
     })
     .join("\n");
@@ -131,13 +161,13 @@ function generateCardSvg(stats, options) {
     .map((item, index) => {
       const col = index % 2;
       const row = Math.floor(index / 2);
-      const x = 290 + col * 220;
-      const y = 138 + row * 90;
+      const x = rightPanelX + 18 + col * 216;
+      const y = statsPanelY + 22 + row * 84;
 
       return `
-        <rect x="${x}" y="${y}" width="204" height="74" rx="12" fill="${theme.tile}" stroke="${theme.border}" />
+        <rect x="${x}" y="${y}" width="198" height="70" rx="12" fill="${theme.tile}" stroke="${theme.border}" />
         <text x="${x + 14}" y="${y + 27}" fill="${theme.muted}" font-size="12" font-weight="600">${xmlEscape(item.label)}</text>
-        <text x="${x + 14}" y="${y + 55}" fill="${theme.text}" font-size="24" font-weight="700">${xmlEscape(item.value)}</text>
+        <text x="${x + 14}" y="${y + 53}" fill="${theme.text}" font-size="23" font-weight="700">${xmlEscape(item.value)}</text>
       `;
     })
     .join("\n");
@@ -162,26 +192,29 @@ function generateCardSvg(stats, options) {
   <rect width="${width}" height="${height}" rx="16" fill="url(#bgFill)"/>
   <rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="15" fill="none" stroke="${theme.border}" />
 
-  <rect x="20" y="20" width="740" height="84" rx="12" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
-  <rect x="20" y="102" width="740" height="3" fill="url(#accentStrip)" opacity="0.75" />
+  <rect x="${padding}" y="${padding}" width="${width - padding * 2}" height="${headerHeight}" rx="12" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
+  <rect x="${padding}" y="${padding + headerHeight - 4}" width="${width - padding * 2}" height="3" fill="url(#accentStrip)" opacity="0.75" />
 
-  <text x="38" y="54" fill="${theme.text}" font-size="26" font-weight="700">${xmlEscape(stats.profile.username)} GitHub Stats</text>
-  <text x="38" y="80" fill="${theme.muted}" font-size="14">${xmlEscape(stats.profile.name || "GitHub User")} | Member since ${memberSinceYear}</text>
+  <text x="${padding + 18}" y="${padding + 34}" fill="${theme.text}" font-size="26" font-weight="700">${xmlEscape(stats.profile.username)} GitHub Stats</text>
+  <text x="${padding + 18}" y="${padding + 60}" fill="${theme.muted}" font-size="14">${xmlEscape(stats.profile.name || "GitHub User")} | Member since ${memberSinceYear}</text>
 
-  <rect x="20" y="124" width="250" height="306" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
+  <rect x="${leftPanelX}" y="${leftPanelY}" width="${leftPanelWidth}" height="${leftPanelHeight}" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
   <circle cx="${donutCenterX}" cy="${donutCenterY}" r="${donutRadius}" fill="none" stroke="${theme.track}" stroke-width="${donutStroke}" opacity="0.35"/>
   ${donutArcs}
-  <text x="${donutCenterX}" y="208" text-anchor="middle" fill="${theme.text}" font-size="30" font-weight="700">${xmlEscape(formatNumber(stats.profile.publicRepos))}</text>
-  <text x="${donutCenterX}" y="230" text-anchor="middle" fill="${theme.muted}" font-size="11" font-weight="600">PUBLIC REPOS</text>
+  <text x="${donutCenterX}" y="${donutCenterY - 6}" text-anchor="middle" fill="${theme.text}" font-size="30" font-weight="700">${xmlEscape(formatNumber(stats.profile.publicRepos))}</text>
+  <text x="${donutCenterX}" y="${donutCenterY + 16}" text-anchor="middle" fill="${theme.muted}" font-size="11" font-weight="600">PUBLIC REPOS</text>
+  <text x="${leftPanelX + 18}" y="${leftPanelY + 220}" fill="${theme.text}" font-size="13" font-weight="700">Language Distribution</text>
+  <text x="${leftPanelX + 18}" y="${leftPanelY + 242}" fill="${theme.muted}" font-size="12">Donut represents all detected languages.</text>
 
-  <rect x="290" y="124" width="470" height="196" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
+  <rect x="${rightPanelX}" y="${statsPanelY}" width="${rightPanelWidth}" height="${statsPanelHeight}" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
+  <text x="${rightPanelX + 18}" y="${statsPanelY + 18}" fill="${theme.text}" font-size="13" font-weight="700">Core Stats</text>
   ${tileSvg}
 
-  <rect x="290" y="334" width="470" height="96" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
-  <text x="308" y="322" fill="${theme.text}" font-size="14" font-weight="700">Used Languages</text>
+  <rect x="${rightPanelX}" y="${languagePanelY}" width="${rightPanelWidth}" height="${languagePanelHeight}" rx="14" fill="${theme.panel || theme.tile}" stroke="${theme.border}" />
+  <text x="${rightPanelX + 18}" y="${languagePanelY + 18}" fill="${theme.text}" font-size="13" font-weight="700">Used Languages</text>
   ${bars}
 
-  <text x="20" y="444" fill="${theme.muted}" font-size="11">Generated from public GitHub data</text>
+  <text x="${padding}" y="${footerY}" fill="${theme.muted}" font-size="11">Generated from public GitHub data</text>
 </svg>`;
 }
 
