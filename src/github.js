@@ -1,13 +1,30 @@
-﻿const USER_AGENT = "github-stats-create";
+const USER_AGENT = "github-stats-create";
+const DEFAULT_TIMEOUT_MS = 8000;
 
-async function githubRequest(url, token) {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": USER_AGENT,
-      Accept: "application/vnd.github+json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+async function githubRequest(url, token, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "application/vnd.github+json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error("GitHub API request timed out");
+      timeoutError.status = 504;
+      throw timeoutError;
     }
-  });
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const details = await safeJson(response);
@@ -30,11 +47,15 @@ async function safeJson(response) {
   }
 }
 
-async function fetchUser(username, token) {
-  return githubRequest(`https://api.github.com/users/${encodeURIComponent(username)}`, token);
+async function fetchUser(username, token, timeoutMs) {
+  return githubRequest(
+    `https://api.github.com/users/${encodeURIComponent(username)}`,
+    token,
+    timeoutMs
+  );
 }
 
-async function fetchRepos(username, token, maxRepos) {
+async function fetchRepos(username, token, maxRepos, timeoutMs) {
   const repos = [];
   let page = 1;
 
@@ -42,7 +63,8 @@ async function fetchRepos(username, token, maxRepos) {
     const remaining = Math.max(1, Math.min(100, maxRepos - repos.length));
     const data = await githubRequest(
       `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=${remaining}&page=${page}&type=owner&sort=updated`,
-      token
+      token,
+      timeoutMs
     );
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -77,7 +99,7 @@ function estimateRepoLanguages(repos) {
   return totals;
 }
 
-async function fetchContributions(username, token) {
+async function fetchContributions(username, token, timeoutMs = DEFAULT_TIMEOUT_MS) {
   if (!token) {
     return null;
   }
@@ -92,15 +114,26 @@ async function fetchContributions(username, token) {
     }
   }`;
 
-  const response = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      "User-Agent": USER_AGENT,
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({ query, variables: { login: username } })
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response;
+  try {
+    response = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ query, variables: { login: username } }),
+      signal: controller.signal
+    });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     return null;
@@ -145,11 +178,24 @@ function sum(values) {
   return values.reduce((acc, value) => acc + Number(value || 0), 0);
 }
 
-async function getProfileStats(username, { token, maxRepos }) {
+async function getProfileStats(
+  username,
+  { token, maxRepos, allReposMode, allReposHardLimit, requestTimeoutMs }
+) {
+  const timeoutMs = Math.max(
+    2000,
+    Math.min(20000, Number(requestTimeoutMs || DEFAULT_TIMEOUT_MS))
+  );
   const safeMaxRepos = Math.max(1, Math.min(100, Number(maxRepos || 30)));
-  const user = await fetchUser(username, token);
-  const repos = await fetchRepos(username, token, safeMaxRepos);
-  const contributions = await fetchContributions(username, token);
+  const safeAllReposHardLimit = Math.max(
+    50,
+    Math.min(2000, Number(allReposHardLimit || 300))
+  );
+  const repoTarget = allReposMode ? safeAllReposHardLimit : safeMaxRepos;
+
+  const user = await fetchUser(username, token, timeoutMs);
+  const repos = await fetchRepos(username, token, repoTarget, timeoutMs);
+  const contributions = await fetchContributions(username, token, timeoutMs);
 
   const stars = sum(repos.map((repo) => repo.stargazers_count));
   const forks = sum(repos.map((repo) => repo.forks_count));
@@ -182,7 +228,12 @@ async function getProfileStats(username, { token, maxRepos }) {
     updatedAt: new Date().toISOString(),
     rateLimitHint: token
       ? "Authenticated mode enabled"
-      : "No token configured; rate limits may apply"
+      : "No token configured; rate limits may apply",
+    scanConfig: {
+      allReposMode: Boolean(allReposMode),
+      targetRepos: repoTarget,
+      hardLimit: safeAllReposHardLimit
+    }
   };
 }
 

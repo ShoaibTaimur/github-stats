@@ -1,18 +1,94 @@
 # GitHub Stats Create
 
-Dark-theme GitHub stats card generator for profile `README.md` embeds.
+Generate a modern GitHub stats card, copy the Markdown, and paste it into your profile `README.md`.
 
-Users can create a custom card, copy Markdown, and paste it into their GitHub profile README. The card image is generated from live GitHub API data whenever the image URL is fetched.
+The card image is served from your API endpoint, so it stays up to date as GitHub data changes.
 
-## Features
+## Live Website
 
-- Dark-first web UI for building cards
-- Custom title, theme, and visible metrics
-- Markdown + direct card URL copy buttons
-- Configurable cache interval per card (`cache_seconds`)
-- Works with Express locally and Vercel serverless routes
+- `https://stats.shoaaib.site`
 
-## Local Setup
+## What This Project Does
+
+- Provides a web UI where a user enters a GitHub username and picks a visual theme.
+- Generates a card URL (`/api/card?...`) and Markdown snippet.
+- Renders an SVG card with:
+  - Core metrics: repositories, stars, followers, following
+  - Language distribution (donut + bars)
+- Supports both:
+  - Express server (`src/server.js`) for local/dev usage
+  - Vercel serverless handlers (`api/card.js`, `api/summary.js`) for deployment
+
+## Website Tour (End-to-End)
+
+1. Open the site.
+2. Enter GitHub username.
+3. Choose theme.
+4. Select refresh interval (cache behavior).
+5. Click **Generate Card**.
+6. Preview updates instantly.
+7. Copy Markdown or copy direct card URL.
+8. Paste Markdown in your GitHub profile `README.md`.
+
+## Markdown Output Example
+
+```md
+![octocat GitHub Stats](https://stats.shoaaib.site/api/card?username=octocat&theme=dark&cache_seconds=300)
+```
+
+## API Reference
+
+### `GET /api/summary`
+Returns profile + counters + language data in JSON.
+
+Query params:
+- `username` (required)
+
+Example:
+- `/api/summary?username=octocat`
+
+### `GET /api/card`
+Returns SVG card.
+
+Query params:
+- `username` (required)
+- `theme` (optional): `dark`, `ocean`, `forest`, `graphite`, `clean`, `warm`
+- `cache_seconds` (optional): `60` to `3600`
+
+Example:
+- `/api/card?username=octocat&theme=forest&cache_seconds=300`
+
+## Environment Variables
+
+- `PORT` default: `3000`
+- `GITHUB_TOKEN` optional but recommended (higher GitHub API rate limits, better reliability)
+- `MAX_REPOS` default: `30` (range `1-100`)
+- `ALL_REPOS_MODE` default: `true` (when `true`, ignores `MAX_REPOS` and scans until hard limit)
+- `ALL_REPOS_HARD_LIMIT` default: `300` (range `50-2000`, safety cap for all-repos mode)
+- `GITHUB_REQUEST_TIMEOUT_MS` default: `8000` (range `2000-20000`)
+- `CARD_CACHE_SECONDS` default: `300` (range `60-3600`)
+
+### All Repos Mode (With Safeguards)
+
+To scan more than a fixed repo count, enable:
+
+- `ALL_REPOS_MODE=true`
+- Set `ALL_REPOS_HARD_LIMIT` to a safe maximum for your deployment
+
+Safeguards included:
+- hard repo cap (`ALL_REPOS_HARD_LIMIT`)
+- request timeout (`GITHUB_REQUEST_TIMEOUT_MS`)
+- normal GitHub rate limiting still applies
+
+## Do You Need `.env` and `.env.example`?
+
+Yes, keep both:
+- `.env.example`: template committed to git (safe placeholders, shared config shape)
+- `.env`: real local/deployment values (private, should not be committed)
+
+So these are **not redundant**.
+
+## Local Development
 
 1. Install dependencies:
 
@@ -20,35 +96,55 @@ Users can create a custom card, copy Markdown, and paste it into their GitHub pr
 npm install
 ```
 
-2. Create `.env` from `.env.example` and set values.
+2. Create local env file:
 
-3. Run in dev mode:
+```bash
+cp .env.example .env
+```
+
+3. Fill values in `.env`.
+
+4. Run dev server:
 
 ```bash
 npm run dev
 ```
 
-4. Open `http://localhost:3000`.
+5. Open:
+- `http://localhost:3000`
 
-## Environment Variables
+## Deployment (Vercel)
 
-- `PORT` default: `3000`
-- `GITHUB_TOKEN` optional, recommended to avoid strict rate limits
-- `MAX_REPOS` default: `30` (range `1-100`)
-- `CARD_CACHE_SECONDS` default: `300` (range `60-3600`)
+1. Push repo to GitHub.
+2. Import project in Vercel.
+3. Set env vars in Vercel project settings.
+4. Deploy.
 
-## Embed Example
+No `vercel.json` is required for this setup.
 
-```md
-![yourname GitHub Stats](https://your-domain.com/api/card?username=yourname&theme=dark&show=repos,stars,forks,followers,following,lines&cache_seconds=300)
-```
+## Realtime / Freshness Note
 
-## Notes
+Cards are dynamically generated, but caches still apply. Freshness depends on:
+- `cache_seconds` query param
+- downstream caching behavior (GitHub/Vercel/CDN)
 
-- "Estimated Lines" is an approximation based on repository size metadata.
-- Contributions require `GITHUB_TOKEN`; otherwise the field may show `--`.
-- Refresh cadence depends on your `cache_seconds` and downstream caching behavior.
+## Project Structure
 
-## Deploy
+- `public/` - frontend generator UI
+- `src/github.js` - GitHub API data fetch + aggregation
+- `src/card.js` - SVG card rendering
+- `src/themes.js` - theme definitions
+- `src/handlers.js` - shared request handlers
+- `src/server.js` - Express app entry
+- `api/` - Vercel serverless endpoints
 
-Deploy to Vercel by importing this repo. The project works with Vercel auto-detection and does not require `vercel.json`.
+## Troubleshooting
+
+- `username is required`
+  - Missing `username` in query.
+- Card not refreshing quickly
+  - Lower `cache_seconds` (minimum 60).
+- Vercel function errors
+  - Check Vercel logs and ensure env vars are set.
+- Rate limit issues
+  - Set `GITHUB_TOKEN`.

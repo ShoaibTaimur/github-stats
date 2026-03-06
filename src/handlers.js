@@ -1,6 +1,13 @@
 const { getProfileStats } = require("./github");
 const { generateCardSvg, parseCardOptions } = require("./card");
-const { GITHUB_TOKEN, MAX_REPOS, CARD_CACHE_SECONDS } = require("./config");
+const {
+  GITHUB_TOKEN,
+  MAX_REPOS,
+  ALL_REPOS_MODE,
+  ALL_REPOS_HARD_LIMIT,
+  GITHUB_REQUEST_TIMEOUT_MS,
+  CARD_CACHE_SECONDS
+} = require("./config");
 
 function getQueryValue(req, key) {
   const value = req?.query?.[key];
@@ -33,7 +40,10 @@ async function summaryHandler(req, res) {
   try {
     const stats = await getProfileStats(username, {
       token: GITHUB_TOKEN,
-      maxRepos: MAX_REPOS
+      maxRepos: MAX_REPOS,
+      allReposMode: ALL_REPOS_MODE,
+      allReposHardLimit: ALL_REPOS_HARD_LIMIT,
+      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS
     });
 
     return res.status(200).json(stats);
@@ -54,7 +64,10 @@ async function cardHandler(req, res) {
   try {
     const stats = await getProfileStats(username, {
       token: GITHUB_TOKEN,
-      maxRepos: MAX_REPOS
+      maxRepos: MAX_REPOS,
+      allReposMode: ALL_REPOS_MODE,
+      allReposHardLimit: ALL_REPOS_HARD_LIMIT,
+      requestTimeoutMs: GITHUB_REQUEST_TIMEOUT_MS
     });
 
     const options = parseCardOptions(req.query);
