@@ -6,7 +6,7 @@ The card image is served from your API endpoint, so it stays up to date as GitHu
 
 ## Live Website
 
-- [stats.shoaaib.site](https://stats.shoaaib.site)
+- [stats.taimur.dev](https://stats.taimur.dev/)
 
 ## What This Project Does
 
